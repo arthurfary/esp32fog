@@ -3,7 +3,7 @@
 #include <esp_wifi.h>
 
 #define CHANNEL 1
-#define NUMSLAVES 12
+#define NUMSLAVES 3
 esp_now_peer_info_t slaves[NUMSLAVES] = {};
 int SlaveCnt = 0;
 #define PRINTSCANRESULTS 0
@@ -90,22 +90,36 @@ void manageSlave() {
   }
 }
 
-static uint8_t data = 0;
+static uint16_t data = 0b1010101010101010; // Dado binário de 16 bits
+
 void sendData() {
-  data++;
+  uint8_t firstPart = data >> 8; // Pega os 8 bits mais significativos
+  uint8_t secondPart = data & 0xFF; // Pega os 8 bits menos significativos
+  esp_err_t result;
+
   for (int i = 0; i < SlaveCnt; i++) {
     const uint8_t *peer_addr = slaves[i].peer_addr;
     if (i == 0) {
       Serial.print("Sending: ");
       Serial.println(data);
+      esp_err_t result = esp_now_send(peer_addr, &firstPart, sizeof(firstPart));
     }
-    esp_err_t result = esp_now_send(peer_addr, &data, sizeof(data));
+    else if (i == 1){
+      esp_err_t result = esp_now_send(peer_addr, &secondPart, sizeof(secondPart));
+    }
+    else{
+      uint8_t Xor = firstPart ^ secondPart;
+      esp_err_t result = esp_now_send(peer_addr, &Xor, sizeof(Xor));
+      Serial.println(Xor);
+    }
+
     if (result == ESP_OK) {
       Serial.println("Send Success");
     } else {
       Serial.println("Send Failed");
     }
-}}
+  }
+}
 
 void onDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   char macStr[18];
@@ -125,10 +139,10 @@ void setup() {
 }
 
 void loop() {
+  while (SlaveCnt < 3){
   scanForSlave();
-  if (SlaveCnt > 0) {
-    manageSlave();
-    sendData();
+  manageSlave();
   }
-  delay(150);
+  sendData();
+  delay(1000);
 }
