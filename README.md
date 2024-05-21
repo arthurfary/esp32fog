@@ -1,43 +1,28 @@
-# Projeto com ESP32
+# Projeto de Automação FOG Computing com ESP32 
 
-Este projeto consiste em configurar uma rede de comunicação entre quatro dispositivos ESP32, onde um deles irá enviar dados e os outros três irão receber. Além disso, um dos dispositivos receptores terá uma função de redundância (OU EXCLUSIVO).
+O projeto visa implementar um sistema de automação utilizando a tecnologia de FOG computing, aproveitando os recursos dos dispositivos ESP32 para processamento local dos dados. Cada ESP32 desempenha um papel específico na automação:
 
-## Funcionalidades
+- 1 dispositivo "master" ESP32 que envia comandos e dados para os outros dispositivos.
+- 2 dispositivos "slave" ESP32 (A e B) que executam tarefas específicas com base nos comandos recebidos do dispositivo "master".
+- 1 dispositivo de paridade ESP32 que calcula a paridade dos dados recebidos dos dispositivos "slave" A e B.
+- 1 dispositivo "cloud" ESP32 que verifica a paridade dos dados antes de enviá-los para a nuvem, garantindo sua integridade.
 
-- Um ESP32 será configurado como emissor de dados.
-- Três ESP32 serão configurados como receptores de dados.
-- Um dos receptores terá uma função de OU EXCLUSIVO.
+## Próximos Passos
 
-## Componentes Necessários
+1. **Configuração dos Dispositivos ESP32:**
+   - Certifique-se de configurar cada dispositivo ESP32 com o código fornecido neste repositório, conforme as instruções específicas para cada dispositivo.
 
-- 1 ESP32 para o emissor de dados.
-- 3 ESP32 para os receptores de dados.
-- Comunicação entre os dispositivos.
+2. **Testes de Comunicação e Processamento:**
+   - Realize testes para garantir que os dispositivos ESP32 estejam se comunicando corretamente e que o processamento dos dados esteja ocorrendo conforme o esperado.
 
-## Configuração do Projeto
+3. **Implementação da Lógica de Paridade:**
+   - Desenvolva a lógica necessária para calcular a paridade dos conjuntos de dados recebidos dos dispositivos "slave" A e B.
 
-1. **Código Fonte:**
-   - O código fonte está disponível nos arquivos `ESPNOW_Basic_Master.ino`, `basic_slave.ino` e `receptor_unico.ino`.
-   - O arquivo `ESPNOW_Basic_Master.ino` contém o código para o ESP32 emissor de dados.
-   - O arquivo `basic_slave.ino` contém o código para os ESP32 receptores de dados.
-   - O arquivo `receptor_unico.ino` contém o código para o ESP32 que terá a função adicional exclusiva.
+4. **Integração com a Nuvem:**
+   - Configure o dispositivo "cloud" para verificar a paridade dos dados e enviar para a nuvem somente se estiverem corretos.
 
-2. **Bibliotecas Necessárias:**
-   - Este projeto utiliza as bibliotecas `esp_now.h` e `WiFi.h` para configuração da comunicação ESP-NOW e da conexão Wi-Fi.
-
-3. **Configuração do ESP-NOW:**
-   - Todos os dispositivos ESP32 devem ser configurados para usar o ESP-NOW para comunicação entre si.
-   
-## Execução do Projeto
-
-1. **Inicialização:**
-   - Carregue o código fonte nos quatro dispositivos ESP32 usando a IDE Arduino ou outra ferramenta de programação compatível.
-   - Inicie os dispositivos e observe as mensagens de inicialização para garantir que a comunicação esteja estabelecida corretamente.
-
-2. **Operação:**
-   - O dispositivo configurado como emissor enviará os dados periodicamente.
-   - Os dispositivos configurados como receptores receberão os dados do emissor.
-   - Um dos dispositivos receptores, configurado com a função adicional exclusiva, terá uma operação específica que será ativada em determinadas condições.
+5. **Testes Finais e Depuração:**
+   - Realize testes finais para garantir que o sistema esteja funcionando corretamente e depure quaisquer problemas encontrados.
 
 ## Contribuição
 
