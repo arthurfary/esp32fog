@@ -1,6 +1,7 @@
 #include <esp_now.h>
 #include <WiFi.h>
 #include <esp_wifi.h>
+#include <bitset>
 
 #define CHANNEL 1
 #define NUMSLAVES 3
@@ -45,7 +46,7 @@ void scanForSlave() {
   }
 
   if (SlaveCnt > 0) {
-    Serial.print(SlaveCnt); Serial.println("Slaves Found, processing..");
+    Serial.print(SlaveCnt); Serial.println(" Slaves Found, processing..");
   } else {
     Serial.println("Slave Not Found, trying again.");
   }
@@ -82,33 +83,53 @@ void manageSlave() {
 
 static uint16_t data = 0b1010101010100010; // Dado binário de 16 bits
 
+typedef struct package_type {
+  char slave;
+  int data;
+  int group;
+} struct_message;
+
 void sendData() {
   uint8_t firstPart = data >> 8; // Pega os 8 bits mais significativos
   uint8_t secondPart = data & 0xFF; // Pega os 8 bits menos significativos
   esp_err_t result;
+
+  package_type firstPackage;
+  firstPackage.slave = 'A';
+  firstPackage.data = firstPart;
+  firstPackage.group = 1;
+
+  package_type secondPackage;
+  secondPackage.slave = 'B';
+  secondPackage.data = secondPart;
+  secondPackage.group = 1;
+
+  uint8_t Xor = firstPart ^ secondPart;
+  package_type lastPackage;
+  lastPackage.slave = 'P';
+  lastPackage.data = Xor;
+  lastPackage.group = 1;
 
   for (int i = 0; i < SlaveCnt; i++) {
     const uint8_t *peer_addr = slaves[i].peer_addr;
     if (i == 0) {
       Serial.print("Sending: ");
       Serial.println(data, BIN);
-      esp_err_t result = esp_now_send(peer_addr, &firstPart, sizeof(firstPart));
+      esp_err_t result = esp_now_send(peer_addr, (uint8_t *) &firstPackage, sizeof(firstPackage));
       Serial.println(firstPart, BIN);
+      Serial.println(firstPackage.data);
     }
     else if (i == 1){
-      esp_err_t result = esp_now_send(peer_addr, &secondPart, sizeof(secondPart));
+      esp_err_t result = esp_now_send(peer_addr, (uint8_t *) &secondPackage, sizeof(secondPackage));
       Serial.println(secondPart, BIN);
+      Serial.println(secondPackage.data);
     }
     else{
       uint8_t Xor = firstPart ^ secondPart;
-      esp_err_t result = esp_now_send(peer_addr, &Xor, sizeof(Xor));
+      esp_err_t result = esp_now_send(peer_addr, (uint8_t *)  &lastPackage, sizeof(lastPackage));
       Serial.println(Xor, BIN);
+      Serial.println(lastPackage.data);
     }
-    // if (result == ESP_OK) {
-    //   Serial.println("Send Success");
-    // } else {
-    //   Serial.println("Send Failed");
-    // }
   }
 }
 
