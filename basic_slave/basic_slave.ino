@@ -1,10 +1,19 @@
 #include <esp_now.h>
 #include <WiFi.h>
+#include <bitset>
 
 #define CHANNEL 1
 #define LED_PIN 2
 #define SSID "Slave_1"
 #define PASSWORD "Slave_1_Password"
+
+typedef struct package_type {
+  char slave;
+  int data;
+  int group;
+} package_type;
+
+package_type incomingData;
 
 void initializeEspNow() {
   WiFi.disconnect();
@@ -33,13 +42,19 @@ void blinkLed(int times, int delayTime) {
   }
 }
 
-void onDataReceived(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
+void onDataReceived(const esp_now_recv_info_t *info, const uint8_t *data, int data_len) {
+  // recieved package
+  memcpy(&incomingData, data, sizeof(incomingData));
+  
   digitalWrite(LED_PIN, HIGH);
+  // Use info->src_addr to access the MAC address
   char macStr[18];
   snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
-           mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+           info->src_addr[0], info->src_addr[1], info->src_addr[2], 
+           info->src_addr[3], info->src_addr[4], info->src_addr[5]);
   Serial.print("Last Packet Recv from: "); Serial.println(macStr);
-  Serial.print("Last Packet Recv Data: "); Serial.println(*data);
+  Serial.print("Last Packet Recv Data: "); Serial.println(incomingData.data, BIN);
+  Serial.print("Last Packet Recv Data: "); Serial.println(incomingData.slave);
   Serial.println("");
   digitalWrite(LED_PIN, LOW);
 }
