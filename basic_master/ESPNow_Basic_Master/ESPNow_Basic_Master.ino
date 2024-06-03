@@ -3,7 +3,7 @@
 #include <esp_wifi.h>
 
 #define CHANNEL 1
-#define NUMSLAVES 12
+#define NUMSLAVES 3
 esp_now_peer_info_t slaves[NUMSLAVES] = {};
 int SlaveCnt = 0;
 #define PRINTSCANRESULTS 0
@@ -65,22 +65,12 @@ void manageSlave() {
       bool exists = esp_now_is_peer_exist(slaves[i].peer_addr);
       if (exists) {
         Serial.println("Already Paired");
-      }else{
+      } else {
         esp_err_t addStatus = esp_now_add_peer(&slaves[i]);
         if (addStatus == ESP_OK) {
           Serial.println("Pair success");
-        } else if (addStatus == ESP_ERR_ESPNOW_NOT_INIT) {
-          Serial.println("ESPNOW Not Init");
-        } else if (addStatus == ESP_ERR_ESPNOW_ARG) {
-          Serial.println("Add Peer - Invalid Argument");
-        } else if (addStatus == ESP_ERR_ESPNOW_FULL) {
-          Serial.println("Peer list full");
-        } else if (addStatus == ESP_ERR_ESPNOW_NO_MEM) {
-          Serial.println("Out of memory");
-        } else if (addStatus == ESP_ERR_ESPNOW_EXIST) {
-          Serial.println("Peer Exists");
         } else {
-          Serial.println("Not sure what happened");
+          Serial.println("Pair failed");
         }
         delay(100);
       }
@@ -90,29 +80,58 @@ void manageSlave() {
   }
 }
 
-static uint8_t data = 0;
+static uint16_t data = 0b1010101010100010; // Dado binário de 16 bits
+
 void sendData() {
-  data++;
+  uint8_t firstPart = data >> 8; // Pega os 8 bits mais significativos
+  uint8_t secondPart = data & 0xFF; // Pega os 8 bits menos significativos
+  esp_err_t result;
+
   for (int i = 0; i < SlaveCnt; i++) {
     const uint8_t *peer_addr = slaves[i].peer_addr;
     if (i == 0) {
       Serial.print("Sending: ");
-      Serial.println(data);
+      Serial.println(data, BIN);
+      esp_err_t result = esp_now_send(peer_addr, &firstPart, sizeof(firstPart));
+      Serial.println(firstPart, BIN);
     }
-    esp_err_t result = esp_now_send(peer_addr, &data, sizeof(data));
-    if (result == ESP_OK) {
-      Serial.println("Send Success");
-    } else {
-      Serial.println("Send Failed");
+    else if (i == 1){
+      esp_err_t result = esp_now_send(peer_addr, &secondPart, sizeof(secondPart));
+      Serial.println(secondPart, BIN);
     }
-}}
+    else{
+      uint8_t Xor = firstPart ^ secondPart;
+      esp_err_t result = esp_now_send(peer_addr, &Xor, sizeof(Xor));
+      Serial.println(Xor, BIN);
+    }
+    // if (result == ESP_OK) {
+    //   Serial.println("Send Success");
+    // } else {
+    //   Serial.println("Send Failed");
+    // }
+  }
+}
 
 void onDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   char macStr[18];
   snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
            mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+  Serial.print(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success " : "Delivery Fail ");
   Serial.print("Last Packet Sent to: "); Serial.println(macStr);
-  Serial.print("Last Packet Send Status: "); Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+
+  if (status != ESP_NOW_SEND_SUCCESS) {
+    for (int i = 0; i < SlaveCnt; i++) {
+      if (memcmp(slaves[i].peer_addr, mac_addr, 6) == 0) {
+        esp_now_del_peer(slaves[i].peer_addr);
+        for (int j = i; j < SlaveCnt - 1; j++) {
+          memcpy(&slaves[j], &slaves[j + 1], sizeof(esp_now_peer_info_t));
+        }
+        SlaveCnt--;
+        Serial.println("Slave removed due to delivery fail");
+        break;
+      }
+    }
+  }
 }
 
 void setup() {
@@ -125,10 +144,12 @@ void setup() {
 }
 
 void loop() {
-  scanForSlave();
-  if (SlaveCnt > 0) {
-    manageSlave();
+  if (SlaveCnt == 3){
     sendData();
   }
-  delay(150);
+  else{
+    scanForSlave();
+    manageSlave();
+  }
+  delay(1000);
 }
