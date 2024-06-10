@@ -7,6 +7,8 @@
 #define SSID "Slave_1"
 #define PASSWORD "Slave_1_Password"
 
+uint8_t broadcastAddress[] = {0xE4, 0x65, 0xB8, 0x78, 0xC8, 0x78};
+
 typedef struct package_type {
   char slave;
   int data;
@@ -14,6 +16,19 @@ typedef struct package_type {
 } package_type;
 
 package_type incomingData;
+
+package_type fowardingData;
+
+void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+  Serial.print("\r\nLast Packet Send Status:\t");
+  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+  if (status ==0){
+    success = "Delivery Success :)";
+  }
+  else{
+    success = "Delivery Fail :(";
+  }
+}
 
 void initializeEspNow() {
   WiFi.disconnect();
@@ -63,7 +78,20 @@ void setup() {
   Serial.begin(115200);
   Serial.println("ESPNow/Basic/Slave Example");
   pinMode(LED_PIN, OUTPUT);
-  WiFi.mode(WIFI_AP);
+  WiFi.mode(WIFI_STA); //WiFi.mode(WIFI_AP);
+  esp_now_register_send_cb(OnDataSent);
+  
+  // Register peer
+  memcpy(peerInfo.peer_addr, broadcastAddress, 6);
+  peerInfo.channel = 0;  
+  peerInfo.encrypt = false;
+  
+  // Add peer        
+  if (esp_now_add_peer(&peerInfo) != ESP_OK){
+    Serial.println("Failed to add peer");
+    return;
+  }
+
   configureAccessPoint();
   Serial.print("AP MAC: "); Serial.println(WiFi.softAPmacAddress());
   initializeEspNow();
