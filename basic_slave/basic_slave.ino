@@ -19,14 +19,16 @@ package_type incomingData;
 
 package_type fowardingData;
 
+esp_now_peer_info_t peerInfo;
+
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   Serial.print("\r\nLast Packet Send Status:\t");
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
   if (status ==0){
-    success = "Delivery Success :)";
+    Serial.println("Delivery Success :)");
   }
   else{
-    success = "Delivery Fail :(";
+    Serial.println("Delivery Fail :(");
   }
 }
 
@@ -57,6 +59,17 @@ void blinkLed(int times, int delayTime) {
   }
 }
 
+void sendIncomingData(package_type fowardingData){
+  esp_err_t result = esp_now_send(broadcastAddress, (uint8_t *) &fowardingData, sizeof(fowardingData));
+
+  if (result == ESP_OK){
+    Serial.println(":)");
+  }
+  else{
+    Serial.println(":(");
+  }
+}
+
 void onDataReceived(const esp_now_recv_info_t *info, const uint8_t *data, int data_len) {
   // recieved package
   memcpy(&incomingData, data, sizeof(incomingData));
@@ -71,6 +84,8 @@ void onDataReceived(const esp_now_recv_info_t *info, const uint8_t *data, int da
   Serial.print("Last Packet Recv Data: "); Serial.println(incomingData.data, BIN);
   Serial.print("Last Packet Recv Data: "); Serial.println(incomingData.slave);
   Serial.println("");
+  fowardingData = incomingData;
+  sendIncomingData(fowardingData);
   digitalWrite(LED_PIN, LOW);
 }
 
@@ -85,16 +100,19 @@ void setup() {
   memcpy(peerInfo.peer_addr, broadcastAddress, 6);
   peerInfo.channel = 0;  
   peerInfo.encrypt = false;
-  
-  // Add peer        
-  if (esp_now_add_peer(&peerInfo) != ESP_OK){
-    Serial.println("Failed to add peer");
-    return;
-  }
+
 
   configureAccessPoint();
   Serial.print("AP MAC: "); Serial.println(WiFi.softAPmacAddress());
   initializeEspNow();
+
+  // Add peer        
+  if (esp_now_add_peer(&peerInfo) != ESP_OK){
+    Serial.println("Failed to add peer");
+    Serial.println(esp_now_add_peer(&peerInfo));
+    return;
+  }
+
   esp_now_register_recv_cb(onDataReceived);
   blinkLed(4, 100);
 }
