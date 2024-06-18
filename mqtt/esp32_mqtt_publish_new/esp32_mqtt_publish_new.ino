@@ -50,8 +50,8 @@ void onDataReceived(const esp_now_recv_info_t *info, const uint8_t *data, int da
   String dataStr = String(incomingData.data);
 
   mqttClient.publish("/fog/parityInfo", dataStr.c_str());
-  Serial.println("Data: ", incomingData.data, BIN);
-  Serial.println("Slave: ", incomingData.slave);
+  Serial.println("Data: " + incomingData.data + BIN);
+  Serial.println("Slave: " + incomingData.slave);
 }
 
 void setup() {
