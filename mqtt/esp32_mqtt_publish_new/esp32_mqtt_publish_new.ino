@@ -10,7 +10,7 @@
 #define MQTT_SERVER "test.mosquitto.org"
 #define MQTT_PORT 1883
 
-uint8_t broadcastAddress[] = {0xE4, 0x65, 0x78, 0xC8, 0x78};
+uint8_t broadcastAddress[] = {0xE4, 0x65, 0xB8, 0x78, 0xC8, 0x78};
 
 typedef struct package_type {
   char slave;
@@ -25,6 +25,16 @@ esp_now_peer_info_t peerInfo;
 
 WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
+
+void blinkLed(int times, int delayTime) {
+  pinMode(LED_PIN, OUTPUT);
+  for (int i = 0; i < times; i++) {
+   digitalWrite(LED_PIN, HIGH);
+   delay(delayTime);
+   digitalWrite(LED_PIN, LOW);
+   delay(delayTime);
+  }
+}
 
 void reconnect() {
   while (!mqttClient.connected()) {
@@ -52,9 +62,12 @@ void onDataReceived(const esp_now_recv_info_t *info, const uint8_t *data, int da
   mqttClient.publish("/fog/parityInfo", dataStr.c_str());
   Serial.println("Data: " + incomingData.data + BIN);
   Serial.println("Slave: " + incomingData.slave);
+
+  blinkLed(1, 10);
 }
 
 void setup() {
+  blinkLed(8, 50);
   Serial.begin(115200);
   WiFi.begin(SSID, PASSWORD);
   while (WiFi.status() != WL_CONNECTED) {
@@ -63,6 +76,8 @@ void setup() {
 
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
   mqttClient.setCallback(callback);
+
+  
 }
 
 void loop() {
