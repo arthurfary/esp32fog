@@ -30,6 +30,7 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   else{
     Serial.println("Delivery Fail :(");
   }
+  blinkLed(2, 10);
 }
 
 void initializeEspNow() {
@@ -114,7 +115,7 @@ void setup() {
   }
 
   esp_now_register_recv_cb(onDataReceived);
-  blinkLed(4, 100);
+  blinkLed(4, 20);
 }
 
 void loop() {
