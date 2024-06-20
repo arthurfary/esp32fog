@@ -5,6 +5,7 @@
 
 #define CHANNEL 1
 #define NUMSLAVES 3
+#define LED_PIN 2
 esp_now_peer_info_t slaves[NUMSLAVES] = {};
 int SlaveCnt = 0;
 #define PRINTSCANRESULTS 0
@@ -133,6 +134,15 @@ void sendData() {
   }
 }
 
+void blinkLed(int times, int delayTime) {
+  for (int i = 0; i < times; i++) {
+   digitalWrite(LED_PIN, HIGH);
+   delay(delayTime);
+   digitalWrite(LED_PIN, LOW);
+   delay(delayTime);
+  }
+}
+
 void onDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   char macStr[18];
   snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
@@ -153,6 +163,7 @@ void onDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
       }
     }
   }
+  blinkLed(2, 50);
 }
 
 void setup() {
