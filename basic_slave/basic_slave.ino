@@ -95,25 +95,23 @@ void setup() {
   Serial.println("ESPNow/Basic/Slave Example");
   pinMode(LED_PIN, OUTPUT);
   WiFi.mode(WIFI_STA); //WiFi.mode(WIFI_AP);
-  esp_now_register_send_cb(OnDataSent);
   
+  configureAccessPoint();
+  Serial.print("AP MAC: "); Serial.println(WiFi.softAPmacAddress());
+  initializeEspNow();
+
   // Register peer
   memcpy(peerInfo.peer_addr, broadcastAddress, 6);
   peerInfo.channel = 0;  
   peerInfo.encrypt = false;
-
-
-  configureAccessPoint();
-  Serial.print("AP MAC: "); Serial.println(WiFi.softAPmacAddress());
-  initializeEspNow();
 
   // Add peer        
   if (esp_now_add_peer(&peerInfo) != ESP_OK){
     Serial.println("Failed to add peer");
     Serial.println(esp_now_add_peer(&peerInfo));
     return;
-  }
-
+  }   
+  esp_now_register_send_cb(OnDataSent);
   esp_now_register_recv_cb(onDataReceived);
   blinkLed(4, 20);
 }
