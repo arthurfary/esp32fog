@@ -18,6 +18,9 @@ typedef struct package_type {
   int group;
 } package_type;
 
+char sA, sB, sP;
+int printCount = 0;
+
 package_type incomingData;
 package_type fowardingData;
 
@@ -66,26 +69,28 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println("Received [" + String(topic) + "]: " + message);
 }
 
+
 void onDataReceived(const esp_now_recv_info_t *info, const uint8_t *data, int data_len) {
   memcpy(&incomingData, data, sizeof(incomingData));
-  
-  String dataStr = String(incomingData.data);
-  Serial.println(dataStr);
 
-  //mqttClient.publish("/fog/parityInfo", dataStr.c_str());
-  Serial.println("Data: " + incomingData.data + BIN);
-  Serial.println("Slave: " + incomingData.slave);
+  Serial.print("Data: "); Serial.print(incomingData.data, BIN);
+  Serial.print(" Slave: "); Serial.println(incomingData.slave);
+
+  if (incomingData.slave == 'A') {sA = incomingData.data;}
+  if (incomingData.slave == 'B') {sB = incomingData.data;}
+  if (incomingData.slave == 'P') {sP = incomingData.data;}
+
+  if (printCount == 2){
+    Serial.print("Parity A xor B == P: "); Serial.println((sA ^ sB) == sP);
+    Serial.print("Parity A xor P == B: "); Serial.println((sA ^ sP) == sB);
+    Serial.print("Parity B xor P == A: "); Serial.println((sB ^ sP) == sA);
+    printCount = 0;
+  }
+  else{
+    printCount += 1;
+  }
 
   blinkLed(1, 10);
-}
-
-void configureAccessPoint() {
-  if (!WiFi.softAP(SSID, PASSWORD, CHANNEL, 0)) {
-    Serial.println("AP Config failed.");
-    return;
-  }
-  Serial.println("AP Config Success. Broadcasting with AP: " + String(SSID));
-  Serial.println("AP CHANNEL "); Serial.println(WiFi.channel());
 }
 
 void setup() {
@@ -93,20 +98,13 @@ void setup() {
   Serial.begin(115200);
   WiFi.mode(WIFI_STA);
   WiFi.begin(SSID, PASSWORD);
-  // while (WiFi.status() != WL_CONNECTED) {
-  //   delay(500);
-  //  }
 
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
   mqttClient.setCallback(callback);
 
-  configureAccessPoint();
   initializeEspNow();  
   esp_now_register_recv_cb(onDataReceived);
 }
 
 void loop() {
-  if (!mqttClient.connected())
-    reconnect();
-  mqttClient.loop();
 }
