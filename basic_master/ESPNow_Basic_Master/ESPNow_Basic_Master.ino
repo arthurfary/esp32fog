@@ -117,19 +117,22 @@ void sendData() {
       Serial.print("Sending: ");
       Serial.println(data, BIN);
       esp_err_t result = esp_now_send(peer_addr, (uint8_t *) &firstPackage, sizeof(firstPackage));
+      Serial.print(firstPackage.data);
+      Serial.print(": ");
       Serial.println(firstPart, BIN);
-      Serial.println(firstPackage.data);
     }
     else if (i == 1){
       esp_err_t result = esp_now_send(peer_addr, (uint8_t *) &secondPackage, sizeof(secondPackage));
+      Serial.print(secondPackage.data);
+      Serial.print(": ");
       Serial.println(secondPart, BIN);
-      Serial.println(secondPackage.data);
     }
     else{
       uint8_t Xor = firstPart ^ secondPart;
       esp_err_t result = esp_now_send(peer_addr, (uint8_t *)  &lastPackage, sizeof(lastPackage));
+      Serial.print(lastPackage.data);
+      Serial.print(": ");
       Serial.println(Xor, BIN);
-      Serial.println(lastPackage.data);
     }
   }
 }
